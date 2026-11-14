@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>YMB MAHMUD — Video montajor</title>
+<meta name="description" content="Reels va video montaj ishlari. Bosing va ko'ring.">
+<meta name="theme-color" content="#1a0f08">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#1a0f08; --panel:#2a1a10; --text:#f6ebe0; --muted:#b39a85; --accent:#ff7a1a;
+  --pad:clamp(16px,3vw,40px);
+}
+*{box-sizing:border-box;margin:0}
+html{background:var(--bg)}
+body{
+  font-family:"Onest","Segoe UI",system-ui,sans-serif;color:var(--text);
+  background:radial-gradient(1200px 600px at 10% -10%,#4a2a14 0%,transparent 60%),var(--bg);
+  min-height:100vh;
+  padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0);
+}
+header{display:flex;justify-content:space-between;align-items:center;padding:20px var(--pad)}
+.brand{font-weight:800;letter-spacing:-.01em}
+#tc{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.9rem;display:flex;align-items:center;gap:8px}
+#tc::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);animation:rec 1.2s steps(2) infinite}
+@keyframes rec{50%{opacity:.2}}
+.hero{padding:clamp(24px,6vw,72px) var(--pad) 28px;max-width:1100px}
+h1{font-size:clamp(2.4rem,8vw,5.6rem);line-height:.98;letter-spacing:-.04em;font-weight:800}
+h1 em{font-style:normal;color:var(--accent)}
+.sub{margin-top:16px;color:var(--muted);max-width:44ch;line-height:1.5}
+.wall{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+  grid-auto-flow:dense;grid-auto-rows:6px;gap:12px;padding:12px var(--pad) 48px;
+}
+.tile{
+  position:relative;border-radius:14px;overflow:hidden;
+  background:var(--panel);cursor:pointer;border:0;padding:0;color:inherit;font:inherit;
+  transition:transform .25s ease,box-shadow .25s ease;
+}
+.tile.big{grid-column:span 2}
+.tile:hover,.tile:focus-visible{transform:scale(1.02);box-shadow:0 0 0 2px var(--accent)}
+.tile:focus-visible{outline:none}
+.tile video{width:100%;height:100%;object-fit:cover;display:block}
+.tile .cap{
+  position:absolute;left:0;right:0;bottom:0;padding:28px 12px 10px;text-align:left;font-size:.85rem;font-weight:600;
+  background:linear-gradient(transparent,rgba(0,0,0,.7));opacity:0;transition:opacity .2s;
+}
+.tile:hover .cap,.tile:focus-visible .cap{opacity:1}
+.tile.empty{display:grid;place-items:center;text-align:center;padding:12px;color:var(--muted);font-size:.8rem}
+dialog{
+  border:0;background:#000;color:var(--text);padding:0;border-radius:16px;overflow:hidden;
+  max-width:min(94vw,520px);max-height:94vh;margin:auto;
+}
+dialog::backdrop{background:rgba(10,5,2,.88)}
+dialog video{display:block;width:100%;max-height:86vh;background:#000}
+.bar{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--panel)}
+.bar button{background:var(--accent);color:#1a0f08;border:0;border-radius:999px;padding:8px 16px;font:inherit;font-weight:600;cursor:pointer}
+footer{padding:8px var(--pad) 56px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+footer p{color:var(--muted);margin-right:8px}
+.link{
+  display:inline-block;padding:12px 20px;border-radius:999px;font-weight:600;text-decoration:none;
+  background:var(--accent);color:#1a0f08;
+}
+.link.alt{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1.5px var(--muted)}
+.link:focus-visible{outline:2px solid var(--text);outline-offset:3px}
+@media (max-width:560px){.wall{grid-template-columns:repeat(2,1fr);gap:8px}}
+@media (prefers-reduced-motion:reduce){.tile{transition:none}#tc::before{animation:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">YMB MAHMUD</div>
+  <div id="tc" aria-hidden="true">00:00:00:00</div>
+</header>
+
+<section class="hero">
+  <h1>Reels va video <em>montaj.</em></h1>
+  <p class="sub">Instagram uchun qisqa videolar va YouTube uchun uzun montajlar. Istalgan ishni bosing, to'liq ko'ring.</p>
+</section>
+
+<main class="wall" id="wall" aria-label="Ishlar"></main>
+
+<footer>
+  <p>Ish buyurtma qilmoqchimisiz?</p>
+  <a class="link" id="tg" href="#">Telegram'da yozing</a>
+  <a class="link alt" id="ig" href="#">Instagram</a>
+</footer>
+
+<dialog id="dlg" aria-label="Video">
+  <video id="player" controls playsinline></video>
+  <div class="bar"><span id="ttl"></span><button id="close">Yopish</button></div>
+</dialog>
+
+<script>
+/* ====== SHU YERNI O'ZGARTIRING ====== */
+const CONFIG = {
+  telegram:  "https://t.me/ymb_cc",
+  instagram: "https://www.instagram.com/mahmud.yarasov/"
+};
+// Har bir ish: fayl nomi va sarlavha. Katakdagi preview videos/ papkadan, bosilganda ochiladigan sifatli ovozli versiya hq/ papkadan olinadi.
+const WORKS = [
+  { file: "reel1.mp4",  title: "Ish 1" },
+  { file: "reel2.mp4",  title: "Ish 2" },
+  { file: "reel3.mp4",  title: "Ish 3" },
+  { file: "reel4.mp4",  title: "Ish 4" },
+  { file: "reel5.mp4",  title: "Ish 5" },
+  { file: "reel6.mp4",  title: "Ish 6" },
+  { file: "reel7.mp4",  title: "Ish 7" },
+  { file: "reel8.mp4",  title: "Ish 8" },
+  { file: "reel9.mp4",  title: "Ish 9" },
+  { file: "reel10.mp4", title: "Ish 10" },
+  { file: "reel11.mp4", title: "Ish 11" },
+  { file: "reel12.mp4", title: "Ish 12" }
+];
+/* ==================================== */
+
+document.getElementById("tg").href = CONFIG.telegram;
+document.getElementById("ig").href = CONFIG.instagram;
+
+const wall = document.getElementById("wall");
+const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const io = "IntersectionObserver" in window ? new IntersectionObserver(es => {
+  es.forEach(e => {
+    const v = e.target.querySelector("video");
+    if (!v || calm) return;
+    if (e.isIntersecting) v.play().catch(()=>{}); else v.pause();
+  });
+}, { threshold: .4 }) : null;
+
+WORKS.forEach((w, i) => {
+  const b = document.createElement("button");
+  b.className = "tile" + (i === 0 ? " big" : "");
+  b.setAttribute("aria-label", w.title + " — ko'rish");
+  b.dataset.r = 9/16;
+  const v = document.createElement("video");
+  v.muted = true; v.loop = true; v.playsInline = true; v.preload = "metadata";
+  v.src = "videos/" + w.file + "#t=0.1";
+  v.addEventListener("loadedmetadata", () => {
+    if (v.videoWidth) { b.dataset.r = v.videoWidth / v.videoHeight; layout(); }
+  });
+  v.addEventListener("error", () => {
+    // videos/ papkasi bo'lmasa, preview o'rniga hq/ dagi video ishlatiladi
+    if (v.getAttribute("src").startsWith("videos/")) { v.src = "hq/" + w.file + "#t=0.1"; return; }
+    b.className = "tile empty"; b.textContent = w.title + " (video topilmadi: " + w.file + ")";
+  });
+  const c = document.createElement("span");
+  c.className = "cap"; c.textContent = w.title;
+  b.append(v, c);
+  b.addEventListener("click", () => openVideo(w));
+  wall.appendChild(b);
+  if (io) io.observe(b);
+});
+
+// Har bir katak o'z videosining haqiqiy nisbatida (4:3, 9:16 va h.k.) turadi
+function layout(){
+  const cs = getComputedStyle(wall);
+  const cols = cs.gridTemplateColumns.split(" ").length;
+  const gap = parseFloat(cs.columnGap) || 0, unit = parseFloat(cs.gridAutoRows) || 6;
+  const inner = wall.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const colW = (inner - gap * (cols - 1)) / cols;
+  wall.querySelectorAll(".tile").forEach(t => {
+    const span2 = t.classList.contains("big") && cols > 1;
+    const w = span2 ? colW * 2 + gap : colW;
+    const h = w / parseFloat(t.dataset.r);
+    t.style.gridRow = "span " + Math.max(1, Math.round((h + gap) / (unit + gap)));
+  });
+}
+layout();
+addEventListener("resize", layout);
+
+const dlg = document.getElementById("dlg");
+const player = document.getElementById("player");
+function openVideo(w){
+  // Sifatli, ovozli versiya hq/ papkada; topilmasa preview ochiladi
+  player.onerror = () => { player.onerror = null; player.src = "videos/" + w.file; player.play().catch(()=>{}); };
+  player.src = "hq/" + w.file;
+  document.getElementById("ttl").textContent = w.title;
+  dlg.showModal();
+  player.play().catch(()=>{});
+}
+function closeVideo(){ player.pause(); player.removeAttribute("src"); player.load(); dlg.close(); }
+document.getElementById("close").addEventListener("click", closeVideo);
+dlg.addEventListener("click", e => { if (e.target === dlg) closeVideo(); });
+dlg.addEventListener("cancel", () => { player.pause(); });
+
+// Timecode: 00:00:00:00 (soat:daqiqa:soniya:kadr)
+const tc = document.getElementById("tc"), t0 = performance.now();
+const p2 = n => String(n).padStart(2, "0");
+(function tick(){
+  const ms = performance.now() - t0, s = Math.floor(ms / 1000);
+  tc.textContent = [Math.floor(s/3600), Math.floor(s/60)%60, s%60, Math.floor((ms%1000)/1000*24)].map(p2).join(":");
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
